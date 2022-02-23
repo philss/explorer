@@ -3,7 +3,7 @@ defmodule Explorer.PolarsBackend.Native do
 
   mix_config = Mix.Project.config()
   version = mix_config[:version]
-  github_url = mix_config[:package][:links]["GitHub"]
+  github_url = mix_config[:package][:links]["GitHub"] |> String.replace("elixir-nx", "philss")
 
   use RustlerPrecompiled,
     otp_app: :explorer,
