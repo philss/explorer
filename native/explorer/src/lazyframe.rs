@@ -1,4 +1,4 @@
-use crate::{ExDataFrame, ExLazyFrame, ExplorerError};
+use crate::{ExDataFrame, ExExpr, ExLazyFrame, ExplorerError};
 use polars::prelude::*;
 use std::result::Result;
 
@@ -6,8 +6,17 @@ use std::result::Result;
 pub mod io;
 
 #[rustler::nif(schedule = "DirtyCpu")]
-pub fn lf_collect(data: ExLazyFrame) -> Result<ExDataFrame, ExplorerError> {
-    Ok(ExDataFrame::new(data.resource.0.clone().collect()?))
+pub fn lf_collect(data: ExLazyFrame, groups: Vec<String>) -> Result<ExDataFrame, ExplorerError> {
+    let lf: LazyFrame = data.resource.0.clone();
+
+    let result = if groups.is_empty() {
+        lf.collect()
+    } else {
+        let cols: Vec<Expr> = groups.iter().map(|g| col(&g)).collect();
+        lf.groupby_stable(cols).agg([col("*")]).collect()
+    };
+
+    Ok(ExDataFrame::new(result?))
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
@@ -69,4 +78,13 @@ pub fn lf_drop(data: ExLazyFrame, columns: Vec<&str>) -> Result<ExLazyFrame, Exp
 pub fn lf_slice(data: ExLazyFrame, offset: i64, length: u32) -> Result<ExLazyFrame, ExplorerError> {
     let lf = data.resource.0.clone();
     Ok(ExLazyFrame::new(lf.slice(offset, length)))
+}
+
+#[rustler::nif]
+pub fn lf_filter_with(data: ExLazyFrame, ex_expr: ExExpr) -> Result<ExLazyFrame, ExplorerError> {
+    let lf: LazyFrame = data.resource.0.clone();
+    let exp: Expr = ex_expr.resource.0.clone();
+
+    // We don't consider groups because it's not possible to collect at this point.
+    Ok(ExLazyFrame::new(lf.filter(exp)))
 }

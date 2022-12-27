@@ -126,7 +126,7 @@ defmodule Explorer.PolarsBackend.Native do
   def expr_string(_string), do: err()
 
   # LazyFrame
-  def lf_collect(_df), do: err()
+  def lf_collect(_df, _groups), do: err()
   def lf_describe_plan(_df, _optimized), do: err()
   def lf_drop(_df, _columns), do: err()
   def lf_dtypes(_df), do: err()
@@ -154,6 +154,8 @@ defmodule Explorer.PolarsBackend.Native do
         _parse_dates
       ),
       do: err()
+
+  def lf_filter_with(_df, _operation), do: err()
 
   # Series
   def s_add(_s, _other), do: err()

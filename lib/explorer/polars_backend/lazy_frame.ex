@@ -20,7 +20,7 @@ defmodule Explorer.PolarsBackend.LazyFrame do
   def to_lazy(ldf), do: ldf
 
   @impl true
-  def collect(ldf), do: Shared.apply_dataframe(ldf, ldf, :lf_collect, [])
+  def collect(ldf), do: Shared.apply_dataframe(ldf, ldf, :lf_collect, [ldf.groups])
 
   # Introspection
 
@@ -184,6 +184,13 @@ defmodule Explorer.PolarsBackend.LazyFrame do
       {:ok, df} -> {:ok, Eager.to_lazy(df)}
       {:error, error} -> {:error, error}
     end
+  end
+
+  @impl true
+  def filter_with(df, out_df, %Explorer.Backend.LazySeries{} = lseries) do
+    expressions = Explorer.PolarsBackend.Expression.to_expr(lseries)
+
+    Shared.apply_dataframe(df, out_df, :lf_filter_with, [expressions])
   end
 
   # Groups
